@@ -1,42 +1,34 @@
 <script>
-  /* === 按你的仓库路径改这两个常量 === */
-  const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
-  const BASE_URL = 'https://hifuturewh.github.io/RBP/interaction_structures/';
+  document.addEventListener('DOMContentLoaded', () => {
+    const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
+    const BASE_URL = 'https://hifuturewh.github.io/RBP/interaction_structures/';
 
-  /* 读取文件列表 → 生成网格 */
-  fetch(CSV_URL)
-    .then(r => {
-      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-      return r.text();
-    })
-    .then(text => {
-      /* ① 先打印到控制台，方便排错 */
-      console.log('[CSV raw text]', text);
+    fetch(CSV_URL)
+      .then(r => {
+        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+        return r.text();
+      })
+      .then(text => {
+        const files = text.match(/[A-Za-z0-9_.-]+\.cif/gi) || [];
+        console.log('[Matched files]', files);
 
-      /* ② 把所有扩展名为 .cif（大小写不限）的字符串找出来
-            - 允许文件名里有字母/数字/下划线/短横线/点
-            - 不再使用单词边界 \b，避免在 “A.B.cif” 这种格式上失效
-      */
-      const files = text.match(/[A-Za-z0-9_.-]+\.cif/gi) || [];
-      console.log('[Matched files]', files);
+        if (!files.length) return alert('CSV 里没找到 .cif 文件名');
 
-      if (!files.length) {
-        alert('CSV 里没找到任何 .cif 文件名，请检查文件格式');
-        return;
-      }
+        const grid = document.getElementById('grid');
+        if (!grid) throw new Error('#grid not found in DOM');
 
-      const grid = document.getElementById('grid');
-      files.forEach(name => {
-        const url = BASE_URL + encodeURIComponent(name);
-        const iframe = document.createElement('iframe');
-        iframe.loading = 'lazy';      // 只在滚入视口时才加载
-        iframe.title   = name;
-        iframe.src     = 'viewer1.html?url=' + encodeURIComponent(url);
-        grid.appendChild(iframe);
+        files.forEach(name => {
+          const url     = BASE_URL + encodeURIComponent(name);
+          const iframe  = document.createElement('iframe');
+          iframe.loading = 'lazy';
+          iframe.title   = name;
+          iframe.src     = 'viewer1.html?url=' + encodeURIComponent(url);
+          grid.appendChild(iframe);
+        });
+      })
+      .catch(err => {
+        console.error('读取列表失败:', err);
+        alert('无法加载文件列表，请稍后重试');
       });
-    })
-    .catch(err => {
-      console.error('读取列表失败:', err);
-      alert('无法加载文件列表，请稍后重试');
-    });
+  });
 </script>
