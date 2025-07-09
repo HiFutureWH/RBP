@@ -1,36 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Mol* Viewer Frame</title>
-  <script src="https://cdn.jsdelivr.net/npm/pdbe-molstar@latest/build/pdbe-molstar-plugin.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pdbe-molstar@latest/build/pdbe-molstar.css" />
+  <meta charset="UTF-8">
+  <title>Structure Gallery</title>
+
+  <!-- ❶ 引入原生 Mol* Viewer -->
+  <script src="https://unpkg.com/molstar/build/viewer/molstar.js"></script>
+  <link  rel="stylesheet" href="https://unpkg.com/molstar/build/viewer/molstar.css"/>
+
   <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      width: 100%;
+    :root { --box-height: 360px; }          /* 每格高度，可调 */
+    *{box-sizing:border-box}
+    body{margin:0;font-family:sans-serif;height:100vh;display:flex;flex-direction:column}
+    h1{margin:10px 16px}
+    #grid{
+      flex:1;
+      overflow:auto;
+      display:grid;
+      gap:12px;
+      padding:12px 16px 24px;
+      grid-template-columns:repeat(auto-fill,minmax(380px,1fr));
     }
-    #viewer-container {
-      width: 100%;
-      height: 100%;
+    .viewer-box{
+      position:relative;                    /* 让 Mol* 绝对定位不溢出 */
+      width:100%;
+      height:var(--box-height);
+      border:1px solid #ddd;
+      border-radius:6px;
+      overflow:hidden;
     }
   </style>
 </head>
 <body>
-  <div id="viewer-container"></div>
+  <h1>Structure Gallery</h1>
+  <div id="grid"></div>
+
   <script>
-    const viewer = new PDBeMolstarPlugin();
+    /* === 根据仓库实际路径修改 === */
+    const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
+    const BASE_URL = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
+    // 若 .cif 已随 Pages 部署，可改为：
+    // const BASE_URL = 'https://hifuturewh.github.io/RBP/interaction_structures/';
 
-    window.addEventListener('message', event => {
-      const fileUrl = event.data;
-      if (!fileUrl.endsWith('.cif')) return;
+    /** 读取 CSV → 生成多实例 Mol* 视窗 */
+    fetch(CSV_URL)
+      .then(r => {
+        if (!r.ok) throw new Error(`CSV ${r.status}`);
+        return r.text();
+      })
+      .then(text => {
+        /* 跳过第一行表头，按换行拿文件名 */
+        const files = text.trim().split(/\r?\n/).slice(1).filter(Boolean);
+        if (!files.length) { alert('CSV 里没有 .cif 文件'); return; }
 
-      viewer.render('viewer-container', {
-        customData: { url: fileUrl, format: 'cif' },
-        ui: true
+        const grid = document.getElementById('grid');
+
+        files.forEach((name, i) => {
+          /* 容器 DIV */
+          const id   = `viewer-${i}`;
+          const box  = document.createElement('div');
+          box.id     = id;
+          box.className = 'viewer-box';
+          grid.appendChild(box);
+
+          /* ❷ 初始化独立 Mol* Viewer 实例 */
+          const viewer = new molstar.Viewer(id, {
+            layoutShowControls : true,
+            collapseLeftPanel  : true,
+            pixelScale         : 1,
+            pickScale          : 0.5
+          });
+
+          /* ❸ 加载结构 */
+          viewer.loadStructureFromUrl(
+            BASE_URL + encodeURIComponent(name),
+            'mmcif',                      /* 数据格式 */
+            false                         /* isBinary */
+          );
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        alert('加载 CSV 或结构数据时出错，详见控制台');
       });
-    }, false);
   </script>
 </body>
 </html>
