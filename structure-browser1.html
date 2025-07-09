@@ -27,7 +27,9 @@
   <!-- ！！！脚本放在 BODY 最后！！！ -->
   <script>
     const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
-    const BASE_URL = 'https://hifuturewh.github.io/RBP/interaction_structures/';
+    <!-- structure-browser1.html 里，唯一需要改这一行 -->
+    const BASE_URL = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
+
 
     fetch(CSV_URL)
       .then(r => {
