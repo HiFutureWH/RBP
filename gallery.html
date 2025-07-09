@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Structure Gallery</title>
+
   <style>
     :root { --cell-h: 380px; }
     *{box-sizing:border-box;margin:0}
@@ -14,11 +15,28 @@
       padding:0 14px 28px;
       grid-template-columns:repeat(auto-fill,minmax(420px,1fr));
     }
-    iframe{
-      width:100%;
-      height:var(--cell-h);
+    /* 单元盒：标题 + iframe 垂直排列 */
+    .cell{
+      display:flex;
+      flex-direction:column;
       border:1px solid #ddd;
       border-radius:6px;
+      overflow:hidden;
+    }
+    .cell h2{
+      margin:0;
+      font-size:15px;
+      padding:6px 8px;
+      background:#f8f8f8;
+      border-bottom:1px solid #e0e0e0;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      overflow:hidden;
+    }
+    .cell iframe{
+      width:100%;
+      height:var(--cell-h);
+      border:none;
     }
   </style>
 </head>
@@ -33,13 +51,24 @@
   fetch(CSV_URL).then(r=>r.text()).then(t=>{
     const files = t.trim().split(/\r?\n/).slice(1).filter(Boolean);
     const grid  = document.getElementById('grid');
+
     files.forEach(name=>{
-      const f = document.createElement('iframe');
-      f.loading='lazy';
-      f.title  = name;
-      f.src    = 'viewer-frame.html?url=' +
-                 encodeURIComponent(BASE_RAW + name);
-      grid.appendChild(f);
+      /* === 创建 cell：标题 + iframe === */
+      const cell   = document.createElement('div');
+      cell.className = 'cell';
+
+      const caption = document.createElement('h2');
+      caption.textContent = name;          // 文件名标题
+      cell.appendChild(caption);
+
+      const frame  = document.createElement('iframe');
+      frame.loading = 'lazy';
+      frame.title   = name;
+      frame.src     = 'viewer-frame.html?url=' +
+                      encodeURIComponent(BASE_RAW + name);
+      cell.appendChild(frame);
+
+      grid.appendChild(cell);
     });
   }).catch(e=>{console.error(e);alert('CSV 读取失败')});
 </script>
