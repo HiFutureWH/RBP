@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Structure + FASTA Gallery</title>
-
+  <meta charset="UTF-8">
+  <title>Structure + Sequence Gallery</title>
   <style>
     :root { --view-h: 360px; --view-w: 420px; }
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:sans-serif}
     h1{margin:16px}
+
     #grid{
       display:flex;
       flex-direction:column;
       gap:20px;
       padding:0 16px 32px;
     }
-    /* 单元格：左右两栏 */
     .row{
       display:flex;
       gap:16px;
@@ -23,6 +22,17 @@
       border:1px solid #ddd;
       border-radius:6px;
       padding:10px;
+    }
+    .id-tag{
+      font:14px/1.2 monospace;
+      padding:6px 8px;
+      background:#e9eef6;
+      border:1px solid #cbd6e2;
+      border-radius:4px;
+      flex-shrink:0;
+      max-width:90px;
+      word-break:break-all;
+      text-align:center;
     }
     iframe{
       width:var(--view-w);
@@ -38,8 +48,7 @@
       border:1px solid #eee;
       padding:6px 8px;
       white-space:pre-wrap;
-      font-family:monospace;
-      font-size:14px;
+      font:14px/1.4 monospace;
     }
     .seq-box.loading{color:#888}
   </style>
@@ -49,47 +58,53 @@
   <div id="grid"></div>
 
 <script>
-  /* === 路径常量 === */
+  /* ===== 路径常量 ===== */
   const CSV_URL   = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
   const BASE_PDB  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
   const BASE_FASTA= 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/sequence/';
 
-  /* 读 CSV → 每行建一个 row */
-  fetch(CSV_URL).then(r=>r.text()).then(text=>{
-    const files = text.trim().split(/\r?\n/).slice(1).filter(Boolean);
+  fetch(CSV_URL).then(r=>r.text()).then(txt=>{
+    const files = txt.trim().split(/\r?\n/).slice(1).filter(Boolean);
     const grid  = document.getElementById('grid');
 
     files.forEach(name=>{
-      /* id = 去掉扩展名 */
-      const id  = name.replace(/\.\w+$/,'');
-      const pdb = BASE_PDB   + name;
-      const fas = BASE_FASTA + id + '.fasta';
+      const id   = name.replace(/\.\w+$/,'');          // 去掉扩展名
+      const pdb  = BASE_PDB   + name;
+      const fasta= BASE_FASTA + id + '.fasta';
 
-      /* 构造 DOM */
-      const row  = document.createElement('div');  row.className='row';
+      /* === DOM 结构 === */
+      const row   = document.createElement('div'); row.className='row';
 
-      const ifr  = document.createElement('iframe');
+      /* ID 标签 */
+      const tag   = document.createElement('div');
+      tag.className = 'id-tag';
+      tag.textContent = id;
+      row.appendChild(tag);
+
+      /* 结构视窗 */
+      const ifr   = document.createElement('iframe');
       ifr.loading='lazy';
       ifr.src = 'viewer-frame.html?url=' + encodeURIComponent(pdb);
       row.appendChild(ifr);
 
-      const seq  = document.createElement('pre');
-      seq.className='seq-box loading';
-      seq.textContent='Loading ' + id + '.fasta …';
-      row.appendChild(seq);
+      /* FASTA 序列框 */
+      const box   = document.createElement('pre');
+      box.className='seq-box loading';
+      box.textContent='Loading '+id+'.fasta …';
+      row.appendChild(box);
 
       grid.appendChild(row);
 
-      /* 拉取 fasta 并填充 */
-      fetch(fas)
-        .then(r => r.ok ? r.text() : '⚠️  not found')
-        .then(txt=>{
-          seq.classList.remove('loading');
-          seq.textContent = txt;
+      /* 拉取 FASTA 填充 */
+      fetch(fasta)
+        .then(r=>r.ok ? r.text() : '⚠️  not found')
+        .then(t=>{
+          box.classList.remove('loading');
+          box.textContent = t;
         })
         .catch(e=>{
-          seq.classList.remove('loading');
-          seq.textContent = '⚠️  fetch error';
+          box.classList.remove('loading');
+          box.textContent = '⚠️  fetch error';
           console.error(e);
         });
     });
