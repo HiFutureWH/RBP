@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>Structure Gallery</title>
+
   <style>
-    :root { --cell-h: 380px; }                     /* 每个 iframe 高度，可改 */
-    *{box-sizing:border-box}
-    body{margin:0;font-family:sans-serif}
-    h1{margin:14px}
+    :root { --cell-h: 360px; }                         /* 每个结构视窗高度 */
+    *{box-sizing:border-box;margin:0}
+    body{font-family:sans-serif}
+    h1{margin:16px}
     #grid{
       display:grid;
-      gap:14px;
-      padding:0 14px 24px;
+      gap:16px;
+      padding:0 16px 32px;
       grid-template-columns:repeat(auto-fill,minmax(420px,1fr));
     }
     iframe{
@@ -27,7 +28,7 @@
   <div id="grid"></div>
 
   <script>
-    /* === 按需修改 === */
+    /* === 只需按需改这两个常量 === */
     const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
     const BASE_RAW = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
 
@@ -38,18 +39,16 @@
         const grid  = document.getElementById('grid');
 
         files.forEach(f => {
-          const url = BASE_RAW + encodeURIComponent(f);
-          const frame = document.createElement('iframe');
-          /* 通过查询参数把文件 URL 传给 viewer.html */
-          frame.src = 'viewer1.html?url=' + encodeURIComponent(url);
-          frame.loading = 'lazy';          // 滚到视口才加载
-          frame.title   = f;
-          grid.appendChild(frame);
+          const iframe = document.createElement('iframe');
+          iframe.loading = 'lazy';
+          iframe.title   = f;
+          iframe.src     = 'viewer1.html?url=' + encodeURIComponent(BASE_RAW + f);
+          grid.appendChild(iframe);
         });
       })
-      .catch(e => {
-        console.error(e);
-        alert('读取 CSV 失败');
+      .catch(err => {
+        console.error(err);
+        alert('CSV 读取失败，请检查控制台日志');
       });
   </script>
 </body>
