@@ -22,7 +22,7 @@
   if(!url){document.body.textContent='no file url';throw'';}
 
   new PDBeMolstarPlugin().render('viewer',{
-    customData: { url, format: 'mmcif' },   // ★ 用 mmcif
+    customData: { url, format: 'pdb' },   // ★ 用 mmcif
     ui: false                                // 去掉侧边栏，只保留小视窗
   });
 </script>
