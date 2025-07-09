@@ -1,55 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Structure Gallery</title>
+<meta charset="UTF-8">
+<title>Structure Gallery</title>
 
-  <style>
-    :root { --cell-h: 360px; }                         /* 每个结构视窗高度 */
-    *{box-sizing:border-box;margin:0}
-    body{font-family:sans-serif}
-    h1{margin:16px}
-    #grid{
-      display:grid;
-      gap:16px;
-      padding:0 16px 32px;
-      grid-template-columns:repeat(auto-fill,minmax(420px,1fr));
-    }
-    iframe{
-      width:100%;
-      height:var(--cell-h);
-      border:1px solid #ddd;
-      border-radius:6px;
-    }
-  </style>
+<style>
+  :root { --cell-h: 380px; }                    /* 每个“小图”高度，可调 */
+  *{box-sizing:border-box;margin:0}
+  body{font-family:sans-serif}
+  h1{margin:14px}
+  #grid{
+    display:grid;
+    gap:14px;
+    padding:0 14px 28px;
+    grid-template-columns:repeat(auto-fill,minmax(420px,1fr));
+  }
+  iframe{
+    width:100%;
+    height:var(--cell-h);
+    border:1px solid #ddd;
+    border-radius:6px;
+  }
+</style>
 </head>
 <body>
   <h1>Structure Gallery</h1>
   <div id="grid"></div>
 
-  <script>
-    /* === 只需按需改这两个常量 === */
-    const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
-    const BASE_RAW = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
+<script>
+  /* —— 按需修改两个常量 —— */
+  const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
+  const BASE_RAW = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
 
-    fetch(CSV_URL)
-      .then(r => r.text())
-      .then(txt => {
-        const files = txt.trim().split(/\r?\n/).slice(1).filter(Boolean);
-        const grid  = document.getElementById('grid');
+  /* 读取 CSV → 生成 iframe 网格 */
+  fetch(CSV_URL)
+    .then(r => r.text())
+    .then(txt => {
+      const names = txt.trim().split(/\r?\n/).slice(1).filter(Boolean);
+      const grid  = document.getElementById('grid');
 
-        files.forEach(f => {
-          const iframe = document.createElement('iframe');
-          iframe.loading = 'lazy';
-          iframe.title   = f;
-          iframe.src     = 'viewer1.html?url=' + encodeURIComponent(BASE_RAW + f);
-          grid.appendChild(iframe);
-        });
-      })
-      .catch(err => {
-        console.error(err);
-        alert('CSV 读取失败，请检查控制台日志');
+      names.forEach(n => {
+        const f = document.createElement('iframe');
+        f.loading = 'lazy';
+        f.title   = n;
+        f.src     = 'viewer1.html?url=' +
+                    encodeURIComponent(BASE_RAW + n);
+        grid.appendChild(f);
       });
-  </script>
+    })
+    .catch(err => { console.error(err); alert('CSV 读取失败'); });
+</script>
 </body>
 </html>
