@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Structure + Sequence + Notes</title>
+  <title>Structure • Sequence • Notes (lazy)</title>
 
   <style>
     :root {
@@ -14,7 +14,7 @@
     body { font-family: sans-serif; }
     h1   { margin: 16px; }
 
-    /* 整体纵向排一行一行 */
+    /* 整体纵向排列表 */
     #grid {
       display: flex;
       flex-direction: column;
@@ -22,7 +22,7 @@
       padding: 0 16px 32px;
     }
 
-    /* 每行横向四列 */
+    /* 每行横向四栏：ID | 视窗 | FASTA | 笔记 */
     .row {
       display: flex;
       gap: 16px;
@@ -32,7 +32,6 @@
       padding: 10px;
     }
 
-    /* ID 标签 */
     .id-tag {
       flex-shrink: 0;
       max-width: 90px;
@@ -45,41 +44,37 @@
       text-align: center;
     }
 
-    /* 结构 iframe */
-    iframe {
+    /* —— 占位框，未加载前显示虚线边框 —— */
+    .viewer-holder{
       width: var(--view-w);
       height: var(--view-h);
-      border: 0;
+      border: 1px dashed #ccc;
+      position: relative;
       flex-shrink: 0;
     }
+    .viewer-holder.loading::before{
+      content:"Loading…";
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      color:#888; font:14px sans-serif;
+    }
 
-    /* FASTA 序列框 */
+    .seq-box, .note-box {
+      flex: 1;
+      max-height: var(--view-h);
+      overflow: auto;
+      white-space: pre-wrap;
+      font: 14px/1.4 monospace;
+    }
     .seq-box {
-      flex: 1;
-      max-height: var(--view-h);
-      overflow: auto;
-      background: #fafafa;
-      border: 1px solid #eee;
-      padding: 6px 8px;
-      white-space: pre-wrap;
-      font: 14px/1.4 monospace;
+      background:#fafafa; border:1px solid #eee; padding:6px 8px;
     }
-    .seq-box.loading { color: #888; }
-
-    /* 可编辑笔记框 */
+    .seq-box.loading { color:#888; }
     .note-box {
-      flex: 1;
-      max-height: var(--view-h);
-      overflow: auto;
-      background: #fffef6;
-      border: 1px solid #d4cfa7;
-      padding: 6px 8px;
-      white-space: pre-wrap;
-      font: 14px/1.4 monospace;
+      background:#fffef6; border:1px solid #d4cfa7; padding:6px 8px;
     }
-    .note-box[contenteditable="true"]:empty:before {
-      content: "Add notes here…";
-      color: #bbb;
+    .note-box[contenteditable="true"]:empty:before{
+      content:"Add notes here…"; color:#bbb;
     }
   </style>
 </head>
@@ -88,82 +83,91 @@
   <div id="grid"></div>
 
 <script>
-  /* ---------------------- 路径常量 ---------------------- */
-  const CSV_URL    = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
-  const BASE_PDB   = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
-  const BASE_FASTA = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/sequence/';
+/* -------------------- 常量 -------------------- */
+const CSV_URL    = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
+const BASE_PDB   = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
+const BASE_FASTA = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/sequence/';
 
-  /* ---------------------- 主流程 ------------------------ */
-  fetch(CSV_URL)
-    .then(r => r.text())
-    .then(text => {
-      const files = text.trim().split(/\r?\n/).slice(1).filter(Boolean);  // 去掉表头
-      const grid  = document.getElementById('grid');
+/* ---------- IntersectionObserver 延迟创建 iframe ---------- */
+const io = new IntersectionObserver(entries=>{
+  entries.forEach(ent=>{
+    if(!ent.isIntersecting) return;                // 还没滚进阈值
+    const holder = ent.target;
+    if(holder.dataset.loaded) return;              // 已加载
+    const iframe = document.createElement('iframe');
+    iframe.src = holder.dataset.src;
+    iframe.style.width  = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = '0';
+    holder.classList.add('loading');
+    iframe.onload = () => holder.classList.remove('loading');
+    holder.appendChild(iframe);
+    holder.dataset.loaded = 'yes';
+    io.unobserve(holder);                          // 一次加载后不再关注
+  });
+}, { rootMargin:'600px 0px' });                    // 视口前后 600 px 触发
 
-      files.forEach(name => {
-        const id   = name.replace(/\.\w+$/, '');       // 去掉扩展名
-        const pdb  = BASE_PDB   + name;
-        const fastaUrl = BASE_FASTA + id + '.fasta';
+/* -------------------- 主流程 ------------------- */
+fetch(CSV_URL)
+  .then(r => r.text())
+  .then(txt => {
+    const files = txt.trim().split(/\r?\n/).slice(1).filter(Boolean);
+    const grid  = document.getElementById('grid');
 
-        /* === 构造 DOM === */
-        const row = document.createElement('div');
-        row.className = 'row';
+    files.forEach(name => {
+      const id   = name.replace(/\.\w+$/,'');
+      const pdb  = BASE_PDB + name;
+      const fas  = BASE_FASTA + id + '.fasta';
 
-        /* ID 标签 */
-        const tag = document.createElement('div');
-        tag.className = 'id-tag';
-        tag.textContent = id;
-        row.appendChild(tag);
+      /* 行容器 */
+      const row = document.createElement('div'); row.className='row';
 
-        /* 结构视窗 */
-        const ifr = document.createElement('iframe');
-        ifr.loading = 'lazy';
-        ifr.src = 'viewer-frame.html?url=' + encodeURIComponent(pdb);
-        row.appendChild(ifr);
+      /* ID */
+      const tag = document.createElement('div');
+      tag.className = 'id-tag'; tag.textContent = id;
+      row.appendChild(tag);
 
-        /* FASTA 框 */
-        const seq = document.createElement('pre');
-        seq.className = 'seq-box loading';
-        seq.textContent = 'Loading ' + id + '.fasta …';
-        row.appendChild(seq);
+      /* 占位视窗 */
+      const holder = document.createElement('div');
+      holder.className = 'viewer-holder';
+      holder.dataset.src = 'viewer-frame.html?url=' + encodeURIComponent(pdb);
+      row.appendChild(holder);
+      io.observe(holder);   // 交由 observer 管理
 
-        /* 笔记框 */
-        const note = document.createElement('pre');
-        note.className = 'note-box';
-        note.contentEditable = 'true';
-        note.spellcheck = false;
-        row.appendChild(note);
+      /* FASTA */
+      const seq = document.createElement('pre');
+      seq.className='seq-box loading';
+      seq.textContent='Loading '+id+'.fasta …';
+      row.appendChild(seq);
 
-        /* 载入已保存笔记 */
-        const saved = localStorage.getItem('note_' + id);
-        if (saved) note.textContent = saved;
-
-        /* 保存事件 */
-        note.addEventListener('input', () => {
-          localStorage.setItem('note_' + id, note.textContent.trim());
-        });
-
-        /* 挂到网格 */
-        grid.appendChild(row);
-
-        /* 拉取 FASTA */
-        fetch(fastaUrl)
-          .then(r => r.ok ? r.text() : '⚠️  not found')
-          .then(txt => {
-            seq.classList.remove('loading');
-            seq.textContent = txt;
-          })
-          .catch(e => {
-            seq.classList.remove('loading');
-            seq.textContent = '⚠️  fetch error';
-            console.error(e);
-          });
+      /* Note */
+      const note = document.createElement('pre');
+      note.className='note-box'; note.contentEditable='true';
+      row.appendChild(note);
+      /* 载入已保存笔记 */
+      const saved = localStorage.getItem('note_'+id);
+      if(saved) note.textContent = saved;
+      note.addEventListener('input',()=>{
+        localStorage.setItem('note_'+id, note.textContent.trim());
       });
-    })
-    .catch(e => {
-      console.error(e);
-      alert('CSV 读取失败');
+
+      grid.appendChild(row);
+
+      /* 拉取 FASTA 文本 */
+      fetch(fas)
+        .then(r=>r.ok ? r.text() : '⚠️  not found')
+        .then(t=>{ seq.classList.remove('loading'); seq.textContent=t; })
+        .catch(e=>{
+          seq.classList.remove('loading');
+          seq.textContent='⚠️  fetch error';
+          console.error(e);
+        });
     });
+  })
+  .catch(e=>{
+    console.error(e);
+    alert('CSV 读取失败');
+  });
 </script>
 </body>
 </html>
