@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Mol* Viewer</title>
 
   <script src="https://unpkg.com/molstar/build/viewer/molstar.js"></script>
@@ -13,27 +13,26 @@
   <div id="app"></div>
 
   <script>
-    /* ──① 取查询参数中的文件 URL ─────────────────────────── */
-    const fileUrl = new URLSearchParams(location.search).get('url');
-    if (!fileUrl) { document.body.textContent = 'no file url'; throw ''; }
+    /* 取 ?url=... */
+    const src = new URLSearchParams(location.search).get('url');
+    if (!src) { document.body.textContent = 'no file url'; throw ''; }
 
-    /* ──② 创建独立 Mol* 实例 ─────────────────────────────── */
+    /* 独立 Mol* 实例 */
     const viewer = new molstar.Viewer('app', {
-      layoutShowControls : true,
-      collapseLeftPanel  : true
+      layoutShowControls:true,
+      collapseLeftPanel:true
     });
 
-    /* ──③ 先 fetch，确认 200，再喂 Mol*（格式写 'cif'）──── */
-    fetch(fileUrl)
+    /* 先 fetch，再用 mmcif 格式喂给 Mol* */
+    fetch(src)
       .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status} — ${fileUrl}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status} — ${src}`);
         return r.text();
       })
-      .then(txt => viewer.loadStructureFromData(
-        fileUrl.split('/').pop(),   /* 文件名仅做标签 */
-        txt,
-        'cif'                       /* ★ Mol* 识别这个关键字 */
-      ))
+      .then(txt => {
+        const fileName = src.split('/').pop();   // ← 这里必须用 src
+        viewer.loadStructureFromData(fileName, txt, 'mmcif');
+      })
       .catch(err => {
         console.error('[加载失败]', err);
         document.body.innerHTML =
