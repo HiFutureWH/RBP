@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Mol* Viewer</title>
 
-  <!-- Mol* 运行时代码 + 样式 -->
+  <!-- Mol* 运行时代码 -->
   <script src="https://unpkg.com/molstar/build/viewer/molstar.js"></script>
   <link  href="https://unpkg.com/molstar/build/viewer/molstar.css" rel="stylesheet"/>
 
@@ -18,23 +18,21 @@
   <div id="app"></div>
 
   <script>
-    /* ★★★ 关键：是 “molstar” 不是 “Molstar” ★★★ */
+    /* ★ 只有小写 m 才存在 ★ */
     const viewer = new molstar.Viewer('app', {
       layoutShowControls: true,
-      layoutIsExpanded: false,
       collapseLeftPanel: true
     });
 
-    /** 加载结构文件并渲染 */
     function load(url){
       viewer.loadStructureFromUrl(url, 'mmcif', false);
     }
 
-    /* ① 支持 ?url=... 直接打开 */
-    const qsUrl = new URLSearchParams(location.search).get('url');
-    if (qsUrl) load(qsUrl);
+    /* 支持 ?url=... 直接加载 */
+    const qs = new URLSearchParams(location.search).get('url');
+    if (qs) load(qs);
 
-    /* ② 支持父页 postMessage 动态切换 */
+    /* 支持父页面 postMessage 动态切换 */
     window.addEventListener('message', ev => {
       if (typeof ev.data === 'string') load(ev.data);
     });
