@@ -1,117 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Structure + Sequence Gallery</title>
-  <style>
-    :root { --view-h: 360px; --view-w: 420px; }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:sans-serif}
-    h1{margin:16px}
+  <meta charset="UTF-8" />
+  <title>Structure Gallery</title>
 
+  <style>
+    :root { --cell-h: 380px; }
+    *{box-sizing:border-box;margin:0}
+    body{font-family:sans-serif}
+    h1{margin:14px}
     #grid{
+      display:grid;
+      gap:14px;
+      padding:0 14px 28px;
+      grid-template-columns:repeat(auto-fill,minmax(420px,1fr));
+    }
+    /* 单元盒：标题 + iframe 垂直排列 */
+    .cell{
       display:flex;
       flex-direction:column;
-      gap:20px;
-      padding:0 16px 32px;
-    }
-    .row{
-      display:flex;
-      gap:16px;
-      align-items:flex-start;
       border:1px solid #ddd;
       border-radius:6px;
-      padding:10px;
+      overflow:hidden;
     }
-    .id-tag{
-      font:14px/1.2 monospace;
+    .cell h2{
+      margin:0;
+      font-size:15px;
       padding:6px 8px;
-      background:#e9eef6;
-      border:1px solid #cbd6e2;
-      border-radius:4px;
-      flex-shrink:0;
-      max-width:90px;
-      word-break:break-all;
-      text-align:center;
+      background:#f8f8f8;
+      border-bottom:1px solid #e0e0e0;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      overflow:hidden;
     }
-    iframe{
-      width:var(--view-w);
-      height:var(--view-h);
-      border:0;
-      flex-shrink:0;
+    .cell iframe{
+      width:100%;
+      height:var(--cell-h);
+      border:none;
     }
-    .seq-box{
-      flex:1;
-      max-height:var(--view-h);
-      overflow:auto;
-      background:#fafafa;
-      border:1px solid #eee;
-      padding:6px 8px;
-      white-space:pre-wrap;
-      font:14px/1.4 monospace;
-    }
-    .seq-box.loading{color:#888}
   </style>
 </head>
 <body>
-  <h1>Structure + Sequence Gallery</h1>
+  <h1>Structure Gallery</h1>
   <div id="grid"></div>
 
 <script>
-  /* ===== 路径常量 ===== */
-  const CSV_URL   = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
-  const BASE_PDB  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
-  const BASE_FASTA= 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/sequence/';
+  const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
+  const BASE_RAW = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
 
-  fetch(CSV_URL).then(r=>r.text()).then(txt=>{
-    const files = txt.trim().split(/\r?\n/).slice(1).filter(Boolean);
+  fetch(CSV_URL).then(r=>r.text()).then(t=>{
+    const files = t.trim().split(/\r?\n/).slice(1).filter(Boolean);
     const grid  = document.getElementById('grid');
 
     files.forEach(name=>{
-      const id   = name.replace(/\.\w+$/,'');          // 去掉扩展名
-      const pdb  = BASE_PDB   + name;
-      const fasta= BASE_FASTA + id + '.fasta';
+      /* === 创建 cell：标题 + iframe === */
+      const cell   = document.createElement('div');
+      cell.className = 'cell';
 
-      /* === DOM 结构 === */
-      const row   = document.createElement('div'); row.className='row';
+      const caption = document.createElement('h2');
+      caption.textContent = name;          // 文件名标题
+      cell.appendChild(caption);
 
-      /* ID 标签 */
-      const tag   = document.createElement('div');
-      tag.className = 'id-tag';
-      tag.textContent = id;
-      row.appendChild(tag);
+      const frame  = document.createElement('iframe');
+      frame.loading = 'lazy';
+      frame.title   = name;
+      frame.src     = 'viewer-frame.html?url=' +
+                      encodeURIComponent(BASE_RAW + name);
+      cell.appendChild(frame);
 
-      /* 结构视窗 */
-      const ifr   = document.createElement('iframe');
-      ifr.loading='lazy';
-      ifr.src = 'viewer-frame.html?url=' + encodeURIComponent(pdb);
-      row.appendChild(ifr);
-
-      /* FASTA 序列框 */
-      const box   = document.createElement('pre');
-      box.className='seq-box loading';
-      box.textContent='Loading '+id+'.fasta …';
-      row.appendChild(box);
-
-      grid.appendChild(row);
-
-      /* 拉取 FASTA 填充 */
-      fetch(fasta)
-        .then(r=>r.ok ? r.text() : '⚠️  not found')
-        .then(t=>{
-          box.classList.remove('loading');
-          box.textContent = t;
-        })
-        .catch(e=>{
-          box.classList.remove('loading');
-          box.textContent = '⚠️  fetch error';
-          console.error(e);
-        });
+      grid.appendChild(cell);
     });
-  }).catch(e=>{
-    console.error(e);
-    alert('CSV 读取失败');
-  });
+  }).catch(e=>{console.error(e);alert('CSV 读取失败')});
 </script>
 </body>
 </html>
