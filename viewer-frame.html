@@ -2,48 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>PDB Viewer (preset camera + rainbow)</title>
+  <title>PDB Preview — Rainbow + Spin</title>
 
-  <!-- PDBe-Mol* 插件 -->
+  <!-- PDBe Mol* 插件 (自动包含 Mol*) -->
   <script src="https://cdn.jsdelivr.net/npm/pdbe-molstar@latest/build/pdbe-molstar-plugin.js"></script>
   <link  rel="stylesheet"
          href="https://cdn.jsdelivr.net/npm/pdbe-molstar@latest/build/pdbe-molstar.css"/>
 
   <style>
     html,body{margin:0;height:100%;width:100%}
-    #v{width:100%;height:100%}
+    #viewer{width:100%;height:100%}
   </style>
 </head>
 <body>
-  <div id="v"></div>
+  <div id="viewer"></div>
 
 <script>
-  /* 从 ?url=... 获取 PDB 地址 */
-  const url = new URLSearchParams(location.search).get('url');
-  if(!url){ document.body.textContent = 'no file url'; throw ''; }
+  /* 1 — 拿到 ?url=… */
+  const pdbUrl = new URLSearchParams(location.search).get('url');
+  if (!pdbUrl) { document.body.textContent = 'no file url'; throw ''; }
 
-  /* 创建并渲染 */
+  /* 2 — 创建插件实例并加载结构 */
   const plugin = new PDBeMolstarPlugin();
 
-  plugin.render('v', {
-    customData : { url, format:'pdb' },
-    ui         : false                 // 隐藏左边 panel
+  plugin.render('viewer', {
+    customData : { url: pdbUrl, format: 'pdb' },  // 加载 PDB
+    ui         : false                            // 不要侧栏
   }).then(async () => {
-    /* ──① 预设相机：让模型占视窗 ~80%，视角为整体中心 ── */
-    plugin.canvas.setProps({
-      camera: { resetClipping:true, snapshot:{ radiusFactor:1.2 } }
-    });
 
-    /* ──② 改成 Cartoon + 彩虹链条配色 ───────────────── */
+    /* 3 — Cartoon + Chain Rainbow */
     await plugin.visual.updateRepresentation({
       type : 'cartoon',
-      color: { name:'chain-id', params:{} }   // Mol* 里“chain rainbow”
+      color: { name: 'chain-id', params: {} }
     });
 
-    /* ──③ 去掉底部序列条与 Logo ─────────────────────── */
-    document
-      .querySelectorAll('.msp-sequence-wrapper, .msp-brand')
-      .forEach(el => el.remove());
+    /* 4 — 相机居中、模型填充 80% 视窗 */
+    plugin.canvas.setProps({
+      camera: {
+        resetClipping: true,
+        snapshot     : { radiusFactor: 1.2 }
+      }
+    });
+
+    /* 5 — 自动旋转（低速） */
+    // plugin.visual.toggleSpin(true) 已内置; 默认为 0.6 rad/s，可调
+    plugin.visual.toggleSpin(true);
+    plugin.visual.setSpinSpeed(0.2);   // 自定义转速 (rad/s)
+
+    /* 6 — 去掉底部序列条与 logo */
+    document.querySelectorAll(
+      '.msp-sequence-wrapper, .msp-brand'
+    ).forEach(el => el.remove());
   });
 </script>
 </body>
