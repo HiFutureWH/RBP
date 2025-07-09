@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>PDB Preview — Rainbow + Auto-spin</title>
+  <title>Mol* Frame</title>
 
-  <!-- PDBe-Mol* 插件（自带 Mol* 运行时） -->
+  <!-- PDBe-Mol* 插件 -->
   <script src="https://cdn.jsdelivr.net/npm/pdbe-molstar@latest/build/pdbe-molstar-plugin.js"></script>
   <link  rel="stylesheet"
          href="https://cdn.jsdelivr.net/npm/pdbe-molstar@latest/build/pdbe-molstar.css"/>
@@ -18,42 +18,12 @@
   <div id="viewer"></div>
 
 <script>
-  /** 1. 获取 PDB 文件 URL（来自 ?url=...） */
-  const pdbUrl = new URLSearchParams(location.search).get('url');
-  if (!pdbUrl) { document.body.textContent = 'no file url'; throw ''; }
+  const url = new URLSearchParams(location.search).get('url');
+  if(!url){document.body.textContent='no file url';throw'';}
 
-  /** 2. 创建插件实例并渲染 */
-  const plugin = new PDBeMolstarPlugin();
-
-  plugin.render('viewer', {
-    customData : { url: pdbUrl, format: 'pdb' }, // 加载 PDB
-    ui         : false                            // 隐藏侧栏
-  })
-  .then(async () => {
-    /** 3-A. 切换到 Cartoon + 彩虹链条配色 */
-    await plugin.viewerInstance.visual.updateRepresentation({
-      type : 'cartoon',
-      color: { name: 'chain-id', params: {} }
-    });
-
-    /** 3-B. 相机居中，让模型充满视窗 */
-    plugin.canvas.setProps({
-      camera:{ resetClipping:true, snapshot:{ radiusFactor:1.2 } }
-    });
-
-    /** 3-C. 开启慢速自转 */
-    plugin.viewerInstance.visual.toggleSpin(true);   // 开启
-    plugin.viewerInstance.visual.setSpinSpeed(0.2);  // 调速 (rad/s)
-
-    /** 3-D. 移除序列条与 Logo，保持简洁 */
-    document.querySelectorAll(
-      '.msp-sequence-wrapper, .msp-brand'
-    ).forEach(el => el.remove());
-  })
-  .catch(err => {
-    console.error('[Mol* 初始化失败]', err);
-    document.body.innerHTML =
-      `<pre style="color:red">${err}</pre>`;
+  new PDBeMolstarPlugin().render('viewer',{
+    customData: { url, format: 'pdb' },   // ★ 用 mmcif
+    ui: false                                // 去掉侧边栏，只保留小视窗
   });
 </script>
 </body>
