@@ -1,53 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Structure Gallery</title>
-  <style>
-    body{margin:0;font-family:sans-serif}
-    h1{margin:10px}
-    #grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(380px,1fr));
-      gap:10px;
-      padding:10px;
-    }
-    iframe{
-      width:100%;
-      aspect-ratio:1/1;      /* 正方形视窗；想拉高可调 */
-      border:none;
-    }
-  </style>
-</head>
-<body>
-  <h1>Structure Gallery</h1>
-  <div id="grid"></div>
+<script>
+  /* === 按你的仓库路径改这两个常量 === */
+  const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
+  const BASE_URL = 'https://hifuturewh.github.io/RBP/interaction_structures/';
 
-  <script>
-    /* === 修改成你自己的仓库路径 === */
-    const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
-    const BASE_URL = 'https://hifuturewh.github.io/RBP/interaction_structures/';
+  /* 读取文件列表 → 生成网格 */
+  fetch(CSV_URL)
+    .then(r => {
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      return r.text();
+    })
+    .then(text => {
+      /* ① 先打印到控制台，方便排错 */
+      console.log('[CSV raw text]', text);
 
-    fetch(CSV_URL)
-      .then(r => r.text())
-      .then(txt => {
-        // 用正则把所有 .cif 名字捞出来（适配一行/多行/逗号空格分隔等格式）
-        const files = txt.match(/\b\S+?\.cif\b/gi) || [];
-        const grid  = document.getElementById('grid');
+      /* ② 把所有扩展名为 .cif（大小写不限）的字符串找出来
+            - 允许文件名里有字母/数字/下划线/短横线/点
+            - 不再使用单词边界 \b，避免在 “A.B.cif” 这种格式上失效
+      */
+      const files = text.match(/[A-Za-z0-9_.-]+\.cif/gi) || [];
+      console.log('[Matched files]', files);
 
-        files.forEach(name => {
-          const url = BASE_URL + encodeURIComponent(name);
-          const box = document.createElement('iframe');
-          box.loading = 'lazy';          // 懒加载，省流量
-          box.title   = name;
-          box.src     = 'viewer1.html?url=' + encodeURIComponent(url);
-          grid.appendChild(box);
-        });
-      })
-      .catch(err => {
-        console.error('CSV 读取失败', err);
-        alert('无法加载文件列表，请稍后重试');
+      if (!files.length) {
+        alert('CSV 里没找到任何 .cif 文件名，请检查文件格式');
+        return;
+      }
+
+      const grid = document.getElementById('grid');
+      files.forEach(name => {
+        const url = BASE_URL + encodeURIComponent(name);
+        const iframe = document.createElement('iframe');
+        iframe.loading = 'lazy';      // 只在滚入视口时才加载
+        iframe.title   = name;
+        iframe.src     = 'viewer1.html?url=' + encodeURIComponent(url);
+        grid.appendChild(iframe);
       });
-  </script>
-</body>
-</html>
+    })
+    .catch(err => {
+      console.error('读取列表失败:', err);
+      alert('无法加载文件列表，请稍后重试');
+    });
+</script>
