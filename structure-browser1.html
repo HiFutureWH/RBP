@@ -1,63 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Structure Browser</title>
+  <meta charset="UTF-8">
+  <title>Structure Gallery</title>
   <style>
-    body{font-family:sans-serif;margin:0;display:flex;flex-direction:column;height:100vh}
-    #topbar{background:#f5f5f5;padding:10px;border-bottom:1px solid #ccc;z-index:1000}
-    iframe{flex-grow:1;width:100%;border:none}
+    body{margin:0;font-family:sans-serif}
+    h1{margin:10px}
+    #grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(380px,1fr));
+      gap:10px;
+      padding:10px;
+    }
+    iframe{
+      width:100%;
+      aspect-ratio:1/1;      /* 正方形视窗；想拉高可调 */
+      border:none;
+    }
   </style>
 </head>
 <body>
-  <div id="topbar">
-    <label for="fileSelect">Select a structure: </label>
-    <select id="fileSelect">
-      <option value="">-- choose a file --</option>
-    </select>
-  </div>
-
-  <!-- 确保 viewer.html 已放在同一仓库/站点中 -->
-  <iframe id="viewer" src="viewer.html"></iframe>
+  <h1>Structure Gallery</h1>
+  <div id="grid"></div>
 
   <script>
-    // === 依据你的仓库路径改这两个常量 ===
+    /* === 修改成你自己的仓库路径 === */
     const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
     const BASE_URL = 'https://hifuturewh.github.io/RBP/interaction_structures/';
 
-    const select      = document.getElementById('fileSelect');
-    const viewerFrame = document.getElementById('viewer');
-
-    // 1. 读取 CSV，提取全部 .cif 文件名
     fetch(CSV_URL)
-      .then(res => res.text())
-      .then(text => {
-        // 用正则抓取 “非空白字符+.cif” 形式的文件名
-        const names = text.match(/\b\S+?\.cif\b/gi) || [];   // g/i = 全局/大小写不敏感
-        if (!names.length) {
-          alert('CSV 里没找到任何 .cif 文件名，请检查文件格式');
-          return;
-        }
-        names.forEach(name => {
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
-          select.appendChild(opt);
+      .then(r => r.text())
+      .then(txt => {
+        // 用正则把所有 .cif 名字捞出来（适配一行/多行/逗号空格分隔等格式）
+        const files = txt.match(/\b\S+?\.cif\b/gi) || [];
+        const grid  = document.getElementById('grid');
+
+        files.forEach(name => {
+          const url = BASE_URL + encodeURIComponent(name);
+          const box = document.createElement('iframe');
+          box.loading = 'lazy';          // 懒加载，省流量
+          box.title   = name;
+          box.src     = 'viewer1.html?url=' + encodeURIComponent(url);
+          grid.appendChild(box);
         });
       })
       .catch(err => {
-        console.error('无法读取 CSV:', err);
-        alert('读取文件列表失败，请稍后重试');
+        console.error('CSV 读取失败', err);
+        alert('无法加载文件列表，请稍后重试');
       });
-
-    // 2. 用户选择后，把完整 URL 通过 postMessage 送进 iframe
-    select.addEventListener('change', () => {
-      const filename = select.value;
-      if (!filename) return;
-      const fileUrl = BASE_URL + encodeURIComponent(filename);
-      // 假设 viewer.html 里也监听了 message 事件来加载新结构
-      viewerFrame.contentWindow.postMessage(fileUrl, '*');
-    });
   </script>
 </body>
 </html>

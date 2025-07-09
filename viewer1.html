@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mol* Viewer</title>
+  <script src="https://unpkg.com/molstar/build/viewer/molstar.js"></script>
+  <style>
+    html,body{margin:0;height:100%}
+    #app{width:100%;height:100%}
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    // 初始化 Mol* 视窗
+    const viewer = new Molstar.Viewer('app', {
+      layoutShowControls: true,
+      layoutIsExpanded: false,
+      layoutShowRemoteState: false
+    });
+
+    // ——两种加载方式——
+    // A) 从查询参数 ?url=... 直接打开（用于“同时显示多结构”的网格）
+    const qs = new URLSearchParams(location.search);
+    const initial = qs.get('url');
+    if (initial) load(initial);
+
+    // B) 从 postMessage 接收（下拉框/按钮时用）
+    window.addEventListener('message', ev => {
+      if (typeof ev.data === 'string') load(ev.data);
+    });
+
+    function load(u){
+      viewer.loadStructureFromUrl(u, 'mmcif', false);
+    }
+  </script>
+</body>
+</html>
