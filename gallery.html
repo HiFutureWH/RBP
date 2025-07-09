@@ -2,75 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Structure Gallery</title>
+  <title>Structure + FASTA Gallery</title>
 
   <style>
-    :root { --cell-h: 380px; }
-    *{box-sizing:border-box;margin:0}
+    :root { --view-h: 360px; --view-w: 420px; }
+    *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:sans-serif}
-    h1{margin:14px}
+    h1{margin:16px}
     #grid{
-      display:grid;
-      gap:14px;
-      padding:0 14px 28px;
-      grid-template-columns:repeat(auto-fill,minmax(420px,1fr));
-    }
-    /* 单元盒：标题 + iframe 垂直排列 */
-    .cell{
       display:flex;
       flex-direction:column;
+      gap:20px;
+      padding:0 16px 32px;
+    }
+    /* 单元格：左右两栏 */
+    .row{
+      display:flex;
+      gap:16px;
+      align-items:flex-start;
       border:1px solid #ddd;
       border-radius:6px;
-      overflow:hidden;
+      padding:10px;
     }
-    .cell h2{
-      margin:0;
-      font-size:15px;
+    iframe{
+      width:var(--view-w);
+      height:var(--view-h);
+      border:0;
+      flex-shrink:0;
+    }
+    .seq-box{
+      flex:1;
+      max-height:var(--view-h);
+      overflow:auto;
+      background:#fafafa;
+      border:1px solid #eee;
       padding:6px 8px;
-      background:#f8f8f8;
-      border-bottom:1px solid #e0e0e0;
-      white-space:nowrap;
-      text-overflow:ellipsis;
-      overflow:hidden;
+      white-space:pre-wrap;
+      font-family:monospace;
+      font-size:14px;
     }
-    .cell iframe{
-      width:100%;
-      height:var(--cell-h);
-      border:none;
-    }
+    .seq-box.loading{color:#888}
   </style>
 </head>
 <body>
-  <h1>Structure Gallery</h1>
+  <h1>Structure + Sequence Gallery</h1>
   <div id="grid"></div>
 
 <script>
-  const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
-  const BASE_RAW = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
+  /* === 路径常量 === */
+  const CSV_URL   = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
+  const BASE_PDB  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/interaction_structures/';
+  const BASE_FASTA= 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/sequence/';
 
-  fetch(CSV_URL).then(r=>r.text()).then(t=>{
-    const files = t.trim().split(/\r?\n/).slice(1).filter(Boolean);
+  /* 读 CSV → 每行建一个 row */
+  fetch(CSV_URL).then(r=>r.text()).then(text=>{
+    const files = text.trim().split(/\r?\n/).slice(1).filter(Boolean);
     const grid  = document.getElementById('grid');
 
     files.forEach(name=>{
-      /* === 创建 cell：标题 + iframe === */
-      const cell   = document.createElement('div');
-      cell.className = 'cell';
+      /* id = 去掉扩展名 */
+      const id  = name.replace(/\.\w+$/,'');
+      const pdb = BASE_PDB   + name;
+      const fas = BASE_FASTA + id + '.fasta';
 
-      const caption = document.createElement('h2');
-      caption.textContent = name;          // 文件名标题
-      cell.appendChild(caption);
+      /* 构造 DOM */
+      const row  = document.createElement('div');  row.className='row';
 
-      const frame  = document.createElement('iframe');
-      frame.loading = 'lazy';
-      frame.title   = name;
-      frame.src     = 'viewer-frame.html?url=' +
-                      encodeURIComponent(BASE_RAW + name);
-      cell.appendChild(frame);
+      const ifr  = document.createElement('iframe');
+      ifr.loading='lazy';
+      ifr.src = 'viewer-frame.html?url=' + encodeURIComponent(pdb);
+      row.appendChild(ifr);
 
-      grid.appendChild(cell);
+      const seq  = document.createElement('pre');
+      seq.className='seq-box loading';
+      seq.textContent='Loading ' + id + '.fasta …';
+      row.appendChild(seq);
+
+      grid.appendChild(row);
+
+      /* 拉取 fasta 并填充 */
+      fetch(fas)
+        .then(r => r.ok ? r.text() : '⚠️  not found')
+        .then(txt=>{
+          seq.classList.remove('loading');
+          seq.textContent = txt;
+        })
+        .catch(e=>{
+          seq.classList.remove('loading');
+          seq.textContent = '⚠️  fetch error';
+          console.error(e);
+        });
     });
-  }).catch(e=>{console.error(e);alert('CSV 读取失败')});
+  }).catch(e=>{
+    console.error(e);
+    alert('CSV 读取失败');
+  });
 </script>
 </body>
 </html>
