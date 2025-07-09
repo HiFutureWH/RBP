@@ -1,34 +1,36 @@
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
-    const BASE_URL = 'https://hifuturewh.github.io/RBP/interaction_structures/';
+<head>
+  …
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      /* === 下面整块就是之前的 fetch 逻辑 === */
+      const CSV_URL  = 'https://raw.githubusercontent.com/HiFutureWH/RBP/main/list/File_Name_List.csv';
+      const BASE_URL = 'https://hifuturewh.github.io/RBP/interaction_structures/';
 
-    fetch(CSV_URL)
-      .then(r => {
-        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-        return r.text();
-      })
-      .then(text => {
-        const files = text.match(/[A-Za-z0-9_.-]+\.cif/gi) || [];
-        console.log('[Matched files]', files);
+      fetch(CSV_URL)
+        .then(r => {
+          if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+          return r.text();
+        })
+        .then(text => {
+          const files = text.match(/[A-Za-z0-9_.-]+\.cif/gi) || [];
+          console.log('[Matched files]', files);
 
-        if (!files.length) return alert('CSV 里没找到 .cif 文件名');
+          if (!files.length) return alert('CSV 里没找到 .cif 文件名');
 
-        const grid = document.getElementById('grid');
-        if (!grid) throw new Error('#grid not found in DOM');
-
-        files.forEach(name => {
-          const url     = BASE_URL + encodeURIComponent(name);
-          const iframe  = document.createElement('iframe');
-          iframe.loading = 'lazy';
-          iframe.title   = name;
-          iframe.src     = 'viewer1.html?url=' + encodeURIComponent(url);
-          grid.appendChild(iframe);
+          const grid = document.getElementById('grid');       // DOMReady 之后一定能取到
+          files.forEach(name => {
+            const url    = BASE_URL + encodeURIComponent(name);
+            const iframe = document.createElement('iframe');
+            iframe.loading = 'lazy';
+            iframe.title   = name;
+            iframe.src     = 'viewer1.html?url=' + encodeURIComponent(url);
+            grid.appendChild(iframe);
+          });
+        })
+        .catch(err => {
+          console.error('读取列表失败:', err);
+          alert('无法加载文件列表，请稍后重试');
         });
-      })
-      .catch(err => {
-        console.error('读取列表失败:', err);
-        alert('无法加载文件列表，请稍后重试');
-      });
-  });
-</script>
+    });
+  </script>
+</head>
