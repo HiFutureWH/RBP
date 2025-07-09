@@ -1,43 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Mol* Viewer</title>
 
   <script src="https://unpkg.com/molstar/build/viewer/molstar.js"></script>
   <link  rel="stylesheet" href="https://unpkg.com/molstar/build/viewer/molstar.css"/>
 
-  <style>
-    html,body{margin:0;height:100%;width:100%}
-    #app{width:100%;height:100%}
-  </style>
+  <style>html,body{margin:0;height:100%}#app{width:100%;height:100%}</style>
 </head>
 <body>
   <div id="app"></div>
 
   <script>
-    /* 1) 从查询参数拿文件 URL */
-    const url = new URLSearchParams(location.search).get('url');
-    if (!url) { document.body.textContent = 'no file url'; throw ''; }
+    /* ──① 取查询参数中的文件 URL ─────────────────────────── */
+    const fileUrl = new URLSearchParams(location.search).get('url');
+    if (!fileUrl) { document.body.textContent = 'no file url'; throw ''; }
 
-    /* 2) 建立独立 Mol* 实例 */
+    /* ──② 创建独立 Mol* 实例 ─────────────────────────────── */
     const viewer = new molstar.Viewer('app', {
       layoutShowControls : true,
-      collapseLeftPanel  : true,
-      pixelScale         : 1,
-      pickScale          : 0.5
+      collapseLeftPanel  : true
     });
 
-    /* 3) 先 fetch，确认 200，再交给 Mol*。用 'mmcif'（Mol* 官方示例格式名）*/
-    fetch(url)
+    /* ──③ 先 fetch，确认 200，再喂 Mol*（格式写 'cif'）──── */
+    fetch(fileUrl)
       .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status} – ${url}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status} — ${fileUrl}`);
         return r.text();
       })
-      .then(txt => viewer.loadStructureFromData(url.split('/').pop(), txt, 'mmcif'))
+      .then(txt => viewer.loadStructureFromData(
+        fileUrl.split('/').pop(),   /* 文件名仅做标签 */
+        txt,
+        'cif'                       /* ★ Mol* 识别这个关键字 */
+      ))
       .catch(err => {
         console.error('[加载失败]', err);
-        document.body.innerHTML = `<pre style="color:red">${err}</pre>`;
+        document.body.innerHTML =
+          `<pre style="color:red">${err}</pre>`;
       });
   </script>
 </body>
